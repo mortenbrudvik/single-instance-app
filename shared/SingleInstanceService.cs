@@ -11,9 +11,8 @@ using static System.Console;
 namespace shared
 {
     /// <summary>
-    /// Features:
-    ///     Sets a local mutext and a named pipe server for the first running instance.
-    ///     The option to send command(s) from the second instance to the first.
+    /// Handles the scenario when you only want one instance of the application running on the local user logon.
+    /// There is also the option to send commands to the other instance using name pipes communication.
     /// </summary>
     public class SingleInstanceService
     {
@@ -49,18 +48,28 @@ namespace shared
 
         public async Task SignalFirstInstance(List<string> commands)
         {
-            WriteLine("Client");
-            var pipe = new NamedPipeClientStream(".", _appId, PipeDirection.Out, PipeOptions.Asynchronous);
-            WriteLine("Connecting");
-            await pipe.ConnectAsync();
+            if (_mutex != null || _pipeServer != null)
+                throw new InvalidOperationException("This method should only be called from the second instance to signal the first.");
 
-            var serialized = JsonConvert.SerializeObject(new SingleInstanceMessage { Commands = commands });
-            var messageBytes = Encoding.UTF8.GetBytes(serialized);
+            try
+            {
+                WriteLine("Client");
+                var pipe = new NamedPipeClientStream(".", _appId, PipeDirection.Out, PipeOptions.Asynchronous);
+                WriteLine("Connecting");
+                await pipe.ConnectAsync();
 
-            await pipe.WriteAsync(messageBytes, 0, messageBytes.Length);
-            await pipe.FlushAsync();
+                var serialized = JsonConvert.SerializeObject(new SingleInstanceMessage { Commands = commands });
+                var messageBytes = Encoding.UTF8.GetBytes(serialized);
 
-            WriteLine("Done");
+                await pipe.WriteAsync(messageBytes, 0, messageBytes.Length);
+                await pipe.FlushAsync();
+
+                WriteLine("Done");
+            }
+            catch (Exception e)
+            {
+                WriteLine("An error occurred: " + e.Message);
+            }
         }
 
         private async Task StartServer(object o)
