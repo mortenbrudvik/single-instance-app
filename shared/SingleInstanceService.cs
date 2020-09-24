@@ -48,7 +48,10 @@ namespace shared
 
         public async Task SignalFirstInstance(List<string> commands)
         {
-            if (_mutex != null || _pipeServer != null)
+            if (_mutex == null)
+                throw new InvalidOperationException("Please call Start before your call this method.");
+
+            if (_pipeServer != null)
                 throw new InvalidOperationException("This method should only be called from the second instance to signal the first.");
 
             try
