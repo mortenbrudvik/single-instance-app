@@ -126,9 +126,6 @@ namespace shared
     {
         public List<string> Commands { get; set; }
 
-        public override string ToString()
-        {
-            return Commands.Aggregate((result, item) => result + item + Environment.NewLine);
-        }
+        public override string ToString() => string.Join(" ", Commands);
     }
 }
