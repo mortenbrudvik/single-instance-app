@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -24,6 +25,27 @@ namespace shared.tests.integration
             Assert.IsTrue(isSingleInstance);
 
             _singleInstanceService.Stop();
+        }
+
+        [Test]
+        public async Task Start_StartHasBeenCalledBefore_InvalidOperationExceptionThrown()
+        {
+            await _singleInstanceService.Start();
+            Assert.ThrowsAsync<InvalidOperationException>(async () => await _singleInstanceService.Start());
+        }
+
+        [Test]
+        public void SingleFirstInstance_StartNotCalledBefore_InvalidOperationExceptionThrown()
+        {
+            Assert.ThrowsAsync<InvalidOperationException>(async () => await _singleInstanceService.SignalFirstInstance(new List<string>() {"Hello!"}));
+        }
+
+        [Test]
+        public async Task SingleFirstInstance_IsFirstInstance_InvalidOperationExceptionThrown()
+        {
+            await _singleInstanceService.Start();
+
+            Assert.ThrowsAsync<InvalidOperationException>(async () => await _singleInstanceService.SignalFirstInstance(new List<string>() {"Hello!"}));
         }
 
         [Test]
