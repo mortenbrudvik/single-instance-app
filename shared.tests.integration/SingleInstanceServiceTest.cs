@@ -32,12 +32,15 @@ namespace shared.tests.integration
         {
             await _singleInstanceService.Start();
             Assert.ThrowsAsync<InvalidOperationException>(async () => await _singleInstanceService.Start());
+
+            await Task.Delay(1000);
+            _singleInstanceService.Stop();
         }
 
         [Test]
         public void SingleFirstInstance_StartNotCalledBefore_InvalidOperationExceptionThrown()
         {
-            Assert.ThrowsAsync<InvalidOperationException>(async () => await _singleInstanceService.SignalFirstInstance(new List<string>() {"Hello!"}));
+            Assert.ThrowsAsync<InvalidOperationException>(async () => await _singleInstanceService.SignalFirstInstance(new List<string> {"Hello!"}));
         }
 
         [Test]
@@ -45,7 +48,10 @@ namespace shared.tests.integration
         {
             await _singleInstanceService.Start();
 
-            Assert.ThrowsAsync<InvalidOperationException>(async () => await _singleInstanceService.SignalFirstInstance(new List<string>() {"Hello!"}));
+            Assert.ThrowsAsync<InvalidOperationException>(async () => await _singleInstanceService.SignalFirstInstance(new List<string> {"Hello!"}));
+
+            await Task.Delay(1000);
+            _singleInstanceService.Stop();
         }
 
         [Test]

@@ -17,9 +17,9 @@ namespace shared
     public class SingleInstanceService
     {
         private Mutex _mutex;
-        private CancellationTokenSource _serverCancellationTokenSource;
         private readonly string _appId = "some-unique_id-" + Environment.UserName;
         private NamedPipeServerStream _pipeServer;
+        private bool _isRunning;
 
         public event EventHandler<List<string>> CommandsReceived;
 
@@ -31,14 +31,14 @@ namespace shared
             _mutex = new Mutex(true, _appId, out var firstInstance);
 
             if (firstInstance)
-                await Task.Factory.StartNew(StartServer, _serverCancellationTokenSource, TaskCreationOptions.LongRunning);
+                await Task.Factory.StartNew(StartServer, TaskCreationOptions.LongRunning);
 
             return firstInstance;
         }
 
         public void Stop()
         {
-            _serverCancellationTokenSource?.Cancel();
+            _isRunning = false;
             _pipeServer?.Close();
             _pipeServer = null;
 
@@ -77,20 +77,15 @@ namespace shared
 
         private async Task StartServer(object o)
         {
-            _serverCancellationTokenSource = new CancellationTokenSource();
-            _serverCancellationTokenSource.CancelAfter(1000);
             WriteLine("Starting Server");
 
             _pipeServer = new NamedPipeServerStream(_appId, PipeDirection.In, 1, PipeTransmissionMode.Message, PipeOptions.Asynchronous);
-            while (!_serverCancellationTokenSource.Token.IsCancellationRequested)
+            while (!_isRunning)
             {
                 try
                 {
                     WriteLine("Waiting for connection....");
-                    await _pipeServer.WaitForConnectionAsync(_serverCancellationTokenSource.Token);
-
-                    if (_serverCancellationTokenSource.IsCancellationRequested)
-                        break;
+                    await _pipeServer.WaitForConnectionAsync();
 
                     WriteLine("Connected");
 
